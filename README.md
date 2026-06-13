@@ -1,5 +1,265 @@
 # KBG RBAC Platform — Complete Implementation Guide
 
+## What This Is
+
+A full-stack **Role-Based Access Control (RBAC)** platform for the Knowledge Base Generator. It includes a React + TypeScript frontend, a FastAPI Python backend, and a PostgreSQL database. Four roles are supported — Admin, User, Approver, and Publisher — each with a tailored dashboard and article workflow.
+
+---
+
+## Prerequisites
+
+You need these installed on your machine (check by running each command in a terminal):
+
+```
+python --version     → Python 3.12+
+node --version       → Node 20+
+git --version        → any recent version
+```
+
+PostgreSQL runs as a portable zip — no installation required.
+
+---
+
+## One-Time Setup
+
+### Step 1 — Get the code
+
+Download the project zip and extract it to your Desktop (or anywhere you prefer). You should have a folder called `kbg-rbac` containing `backend/` and `frontend/`.
+
+---
+
+### Step 2 — Set up PostgreSQL (database)
+
+Download the PostgreSQL 16/17/18 **zip archive** (not the installer) from:
+> https://www.enterprisedb.com/download-postgresql-binaries → Windows x86-64
+
+Extract it to: `C:\Users\YOUR_USERNAME\pgsql`
+
+Open PowerShell and run these **one time only**:
+
+```powershell
+# Add postgres to PATH for this session
+$env:PATH = "C:\Users\$env:USERNAME\pgsql\pgsql\bin;" + $env:PATH
+
+# Initialise the database storage folder
+initdb -D C:\Users\$env:USERNAME\pgdata -U postgres -A trust -E UTF8
+
+# Start the database server
+pg_ctl -D C:\Users\$env:USERNAME\pgdata -l C:\Users\$env:USERNAME\postgres.log start
+
+# Create the application database
+createdb -U postgres kbg_rbac
+```
+
+> **Note:** If the `pgdata` folder already exists, skip `initdb` and go straight to `pg_ctl start`.
+
+---
+
+### Step 3 — Set up the backend
+
+Open PowerShell, navigate to the backend folder:
+
+```powershell
+cd C:\Users\$env:USERNAME\Desktop\kbg-rbac\backend
+```
+
+Create and activate a Python virtual environment:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+> If you get a script execution policy error, run this first:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+pip install bcrypt==4.0.1
+```
+
+---
+
+### Step 4 — Seed the database
+
+With the venv still active and Postgres running:
+
+```powershell
+python -m app.db.seed
+```
+
+Expected output:
+```
+🌱 Seeding permissions...
+🌱 Seeding roles...
+🌱 Seeding admin user...
+✅ Seed complete. Admin login: admin@kbgplatform.com / Admin@123456
+```
+
+---
+
+### Step 5 — Install frontend dependencies
+
+Open a **second PowerShell window**:
+
+```powershell
+cd C:\Users\$env:USERNAME\Desktop\kbg-rbac\frontend
+npm install
+```
+
+This takes 1–3 minutes the first time.
+
+---
+
+## Running the App (Daily Use)
+
+You need **three PowerShell terminals** open. After the first-time setup, this is all you run each day.
+
+### Terminal 1 — Start the database
+
+```powershell
+$env:PATH = "C:\Users\$env:USERNAME\pgsql\pgsql\bin;" + $env:PATH
+pg_ctl -D C:\Users\$env:USERNAME\pgdata start
+```
+
+### Terminal 2 — Start the backend
+
+```powershell
+cd C:\Users\$env:USERNAME\Desktop\kbg-rbac\backend
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+You'll see: `✅ KBG RBAC Platform v1.0.0 started`
+
+### Terminal 3 — Start the frontend
+
+```powershell
+cd C:\Users\$env:USERNAME\Desktop\kbg-rbac\frontend
+npm run dev
+```
+
+You'll see: `➜  Local:   http://localhost:3000/`
+
+---
+
+## Access the App
+
+| URL | What it is |
+|-----|------------|
+| http://localhost:3000 | Main application UI |
+| http://localhost:8000/api/v1/docs | API documentation (Swagger) |
+
+---
+
+## Default Login
+
+| Field | Value |
+|-------|-------|
+| Email | `admin@kbgplatform.com` |
+| Password | `Admin@123456` |
+
+---
+
+## Creating Test Users
+
+After logging in as admin, go to **User Management → Create User** to add accounts for each role:
+
+| Role | Suggested email | Password |
+|------|----------------|----------|
+| USER | user@kbgplatform.com | Test@12345 |
+| APPROVER | approver@kbgplatform.com | Test@12345 |
+| PUBLISHER | publisher@kbgplatform.com | Test@12345 |
+
+Log out and log in as each role to see their role-specific dashboard.
+
+---
+
+## Article Workflow
+
+```
+USER creates article (DRAFT)
+  ↓
+USER submits → PENDING APPROVAL
+  ↓
+APPROVER reviews → APPROVED or REJECTED
+  ↓
+PUBLISHER publishes → PUBLISHED
+  (or raises dispute → DISPUTED → back to PENDING APPROVAL)
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18, TypeScript, Material UI v6, Redux Toolkit |
+| Backend | FastAPI (Python 3.12), Uvicorn ASGI |
+| Database | PostgreSQL 16+, SQLAlchemy 2 (async) |
+| Auth | JWT (access + refresh tokens), bcrypt password hashing |
+| API Docs | Swagger / OpenAPI (auto-generated) |
+| Notifications | Microsoft Graph API (email) — configurable |
+| Webhooks | HMAC-SHA256 signed event delivery |
+
+---
+
+## Project Structure
+
+```
+kbg-rbac/
+├── backend/
+│   ├── app/
+│   │   ├── api/v1/endpoints/   ← All API routes
+│   │   ├── core/               ← Config, JWT security
+│   │   ├── db/                 ← Database session, seed script
+│   │   ├── middleware/         ← RBAC permission guards
+│   │   ├── models/             ← SQLAlchemy database models
+│   │   ├── schemas/            ← Pydantic request/response schemas
+│   │   ├── services/           ← Email, audit, webhook services
+│   │   └── main.py             ← FastAPI application entry point
+│   ├── requirements.txt
+│   └── .env                    ← Environment configuration
+├── frontend/
+│   ├── src/
+│   │   ├── components/         ← Reusable UI components
+│   │   ├── hooks/              ← React hooks (auth, etc.)
+│   │   ├── pages/              ← Page components per role
+│   │   ├── services/           ← Axios API client
+│   │   ├── store/              ← Redux state management
+│   │   └── App.tsx             ← Routes and auth guards
+│   └── package.json
+└── README.md
+```
+
+---
+
+## Common Issues
+
+| Problem | Fix |
+|---------|-----|
+| `initdb` not found | Add Postgres bin to PATH: `$env:PATH = "C:\Users\$env:USERNAME\pgsql\pgsql\bin;" + $env:PATH` |
+| `ConnectionRefusedError` on seed | Postgres isn't running — run `pg_ctl start` first |
+| Script execution blocked | Run: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| `ModuleNotFoundError` | Venv not activated — run `.\venv\Scripts\Activate.ps1` first |
+| Port 8000 in use | Change backend to `--port 8080`, update `frontend/.env` to match |
+| `npm install` fails (SSL) | Run: `npm config set strict-ssl false` |
+| `pip install` fails (SSL) | Run: `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt` |
+
+---
+
+## Stopping the App
+
+- Frontend: `Ctrl+C` in Terminal 3
+- Backend: `Ctrl+C` in Terminal 2
+- Database: `pg_ctl -D C:\Users\$env:USERNAME\pgdata stop` in Terminal 1
+
+---
+
+*Built with FastAPI, React, PostgreSQL · Local development only · No admin privileges required*
+
 ## System Architecture
 
 ```
@@ -370,50 +630,6 @@ def verify_webhook(secret: str, payload: bytes, signature: str) -> bool:
 
 The `MicrosoftGraphEmailService` acquires a token via `client_credentials` flow
 (no user interaction) and sends via `POST /users/{sender}/sendMail`.
-
----
-
-## Step-by-Step Implementation Roadmap
-
-### Phase 1 — Foundation (Week 1)
-- [ ] `docker-compose up` PostgreSQL + Redis
-- [ ] `cp backend/.env.example backend/.env` → fill in values
-- [ ] `pip install -r requirements.txt`
-- [ ] `python -m app.db.seed` (creates tables + admin user)
-- [ ] `uvicorn app.main:app --reload`
-- [ ] Verify Swagger at `http://localhost:8000/api/v1/docs`
-
-### Phase 2 — Backend Auth & RBAC (Week 1-2)
-- [ ] Test login at `/auth/login` → get tokens
-- [ ] Verify RBAC guards block wrong roles
-- [ ] Test article workflow end-to-end via Swagger
-- [ ] Add Alembic for migration management
-- [ ] Add Redis token blacklist for logout
-
-### Phase 3 — Frontend (Week 2-3)
-- [ ] `cd frontend && npm install && npm run dev`
-- [ ] Login as admin, verify dashboard
-- [ ] Create test users with each role
-- [ ] Test role-filtered navigation
-- [ ] Complete article CRUD and workflow actions
-
-### Phase 4 — Integrations (Week 3-4)
-- [ ] Register Azure app, set env vars
-- [ ] Test email via `NotificationService`
-- [ ] Register webhook endpoint in DB
-- [ ] Test delivery with ngrok: `python scripts/ngrok_dev.py`
-- [ ] Verify HMAC signature on receiver
-
-### Phase 5 — Hardening (Week 4-5)
-- [ ] Rate limiting (slowapi)
-- [ ] Input sanitization
-- [ ] HTTPS / TLS in production
-- [ ] Secrets via vault (AWS Secrets Manager / Azure Key Vault)
-- [ ] Redis token blacklist on logout
-- [ ] Database connection pooling tuning
-- [ ] Add Celery + Redis for async webhook delivery queue
-- [ ] Write integration tests
-- [ ] Add monitoring (Prometheus + Grafana or Datadog)
 
 ---
 
