@@ -1,0 +1,121 @@
+### KBG Platform — API Tests
+### Install "REST Client" extension in VSCode, then click "Send Request" above each block
+
+@baseUrl = http://localhost:8000/api/v1
+@adminEmail = admin@kbg.local
+@adminPassword = Admin@123456
+
+# ── Step 1: Login ─────────────────────────────────────────────────────────────
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+###
+
+# Copy the access_token from the response above and paste below:
+@token = PASTE_ACCESS_TOKEN_HERE
+
+# ── Step 2: Get current user ──────────────────────────────────────────────────
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+###
+
+# ── Step 3: List users ────────────────────────────────────────────────────────
+GET {{baseUrl}}/users?page=1&page_size=10
+Authorization: Bearer {{token}}
+
+###
+
+# ── Step 4: Create a regular user ─────────────────────────────────────────────
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "testuser@kbg.local",
+  "username": "testuser",
+  "full_name": "Test User",
+  "password": "Test@12345",
+  "role_names": ["USER"]
+}
+
+###
+
+# ── Step 5: Create an article (log in as testuser first) ──────────────────────
+# @name userLogin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@kbg.local",
+  "password": "Test@12345"
+}
+
+###
+
+@userToken = PASTE_USER_ACCESS_TOKEN_HERE
+
+POST {{baseUrl}}/articles
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "title": "My First KB Article",
+  "content": "This article explains the onboarding process for new engineers.",
+  "summary": "Onboarding guide",
+  "tags": ["onboarding", "engineering"],
+  "category": "HR"
+}
+
+###
+
+# ── Step 6: Submit article for approval ───────────────────────────────────────
+@articleId = PASTE_ARTICLE_ID_HERE
+
+POST {{baseUrl}}/articles/{{articleId}}/submit
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "comment": "Ready for review"
+}
+
+###
+
+# ── Step 7: Approve article (as admin) ───────────────────────────────────────
+POST {{baseUrl}}/articles/{{articleId}}/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "comment": "Looks good, approved!"
+}
+
+###
+
+# ── Step 8: Publish article (as admin) ───────────────────────────────────────
+POST {{baseUrl}}/articles/{{articleId}}/publish
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+###
+
+# ── Step 9: View audit logs ───────────────────────────────────────────────────
+GET {{baseUrl}}/admin/audit-logs?page=1&page_size=20
+Authorization: Bearer {{token}}
+
+###
+
+# ── Step 10: Platform stats ───────────────────────────────────────────────────
+GET {{baseUrl}}/admin/stats
+Authorization: Bearer {{token}}
+
+###

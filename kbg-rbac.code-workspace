@@ -1,0 +1,127 @@
+{
+  "folders": [
+    { "name": "🗂 Root", "path": "." },
+    { "name": "⚙️ Backend", "path": "backend" },
+    { "name": "🎨 Frontend", "path": "frontend" }
+  ],
+  "settings": {
+    "python.defaultInterpreterPath": "${workspaceFolder:⚙️ Backend}/venv/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/venv": true,
+      "**/.git": true
+    },
+    "[python]": {
+      "editor.tabSize": 4
+    },
+    "typescript.preferences.importModuleSpecifier": "relative"
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🐍 Backend: Create venv",
+        "type": "shell",
+        "command": "python -m venv venv",
+        "options": { "cwd": "${workspaceFolder:⚙️ Backend}" },
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "🐍 Backend: Install dependencies",
+        "type": "shell",
+        "windows": { "command": ".\\venv\\Scripts\\python.exe -m pip install -r requirements.txt" },
+        "linux":   { "command": "./venv/bin/pip install -r requirements.txt" },
+        "osx":     { "command": "./venv/bin/pip install -r requirements.txt" },
+        "options": { "cwd": "${workspaceFolder:⚙️ Backend}" },
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "🌱 Backend: Seed database",
+        "type": "shell",
+        "windows": { "command": ".\\venv\\Scripts\\python.exe -m app.db.seed" },
+        "linux":   { "command": "./venv/bin/python -m app.db.seed" },
+        "osx":     { "command": "./venv/bin/python -m app.db.seed" },
+        "options": { "cwd": "${workspaceFolder:⚙️ Backend}" },
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "🚀 Backend: Start server",
+        "type": "shell",
+        "windows": { "command": ".\\venv\\Scripts\\uvicorn.exe app.main:app --reload --host 127.0.0.1 --port 8000" },
+        "linux":   { "command": "./venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000" },
+        "osx":     { "command": "./venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000" },
+        "options": { "cwd": "${workspaceFolder:⚙️ Backend}" },
+        "group": "test",
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" }
+      },
+      {
+        "label": "📦 Frontend: Install dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "options": { "cwd": "${workspaceFolder:🎨 Frontend}" },
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      },
+      {
+        "label": "🎨 Frontend: Start dev server",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": { "cwd": "${workspaceFolder:🎨 Frontend}" },
+        "group": "test",
+        "isBackground": true,
+        "problemMatcher": [],
+        "presentation": { "reveal": "always", "panel": "dedicated", "group": "servers" }
+      },
+      {
+        "label": "✅ FULL SETUP (run once)",
+        "dependsOn": [
+          "🐍 Backend: Create venv",
+          "🐍 Backend: Install dependencies",
+          "📦 Frontend: Install dependencies"
+        ],
+        "dependsOrder": "sequence",
+        "group": "build",
+        "presentation": { "reveal": "always", "panel": "new" }
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "🚀 FastAPI (debug)",
+        "type": "debugpy",
+        "request": "launch",
+        "module": "uvicorn",
+        "args": ["app.main:app", "--reload", "--host", "127.0.0.1", "--port", "8000"],
+        "cwd": "${workspaceFolder:⚙️ Backend}",
+        "env": { "PYTHONPATH": "${workspaceFolder:⚙️ Backend}" },
+        "jinja": true,
+        "justMyCode": true
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-python.python",
+      "ms-python.debugpy",
+      "ms-python.vscode-pylance",
+      "bradlc.vscode-tailwindcss",
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      "mtxr.sqltools",
+      "mtxr.sqltools-driver-pg",
+      "humao.rest-client"
+    ]
+  }
+}
